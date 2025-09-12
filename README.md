@@ -41,4 +41,3 @@ Contributions are welcome! Please submit pull requests or open issues for new pa
 This project is licensed under the Apache License 2.0. See `LICENSE` for details.# FlowSim
 
 A simulation and visualization tool for complex poi spinning patterns, including gunslinger poi. Features a Gradio UI and Manim-based animation output.
->>>>>>> 3a11803 (Initial commit for v2.0 update)
