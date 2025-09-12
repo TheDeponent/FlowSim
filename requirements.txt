@@ -1,0 +1,6 @@
+gradio
+manim
+numpy
+matplotlib
+imageio
+moviepy
