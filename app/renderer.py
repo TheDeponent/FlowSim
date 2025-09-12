@@ -8,6 +8,8 @@ def combine_patterns(
     show_left_head, show_left_handle, show_right_head, show_right_handle,
     frame_idx=0, preview_mode=False
 ):
+    from app.patterns.CAPAntispin import generate_CAPAntispin
+    from app.patterns.CAPHorizontal import generate_CAPHorizontal
     from app.patterns.HorizontalCateye import generate_HorizontalCateye
     from app.patterns.TwelvePetalAnti import generate_TwelvePetalAnti
     from app.patterns.TenPetalAnti import generate_TenPetalAnti
@@ -38,6 +40,8 @@ def combine_patterns(
     config.disable_caching = True  # Disable Manim cache to force fresh render
 
     pattern_map = {
+    "CAP (Vertical)": generate_CAPAntispin,
+    "CAP (Horizontal)": generate_CAPHorizontal,
         "Extension": generate_Extension,
         "12 Petal Antispin (Gunslinger)": generate_TwelvePetalAnti,
         "10 Petal Antispin (Gunslinger)": generate_TenPetalAnti,
