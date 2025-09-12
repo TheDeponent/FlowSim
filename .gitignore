@@ -6,3 +6,30 @@ Gifs
 OLDCODE
 OLDCODE/SPIRALTEST.py
 PromptLibrary
+# Python virtual environment
+.venv/
+
+# Ignore all files in media except keep folder structure
+/media/*
+!/media/
+!/media/**/
+
+# Ignore v1 folder
+v1/
+
+# Ignore GIFs and MP4s in root directory
+/*.gif
+/*.mp4
+
+# VS Code settings
+.vscode/
+
+# __pycache__ and other Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MacOS and Windows system files
+.DS_Store
+Thumbs.db
