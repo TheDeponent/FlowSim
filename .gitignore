@@ -1,11 +1,3 @@
-# Default ignored files
-.idea
-venv
-GIFs
-Gifs
-OLDCODE
-OLDCODE/SPIRALTEST.py
-PromptLibrary
 # Python virtual environment
 .venv/
 
