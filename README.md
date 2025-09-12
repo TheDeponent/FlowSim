@@ -1,6 +1,6 @@
 # FlowSim
 
-FlowSim is a modular poi spinning pattern visualizer and animation tool built with Python, Gradio, and Manim. It allows users to select, preview, and export a wide variety of physically accurate poi patterns, including inspin, antispin, box, gunslinger, and more. Patterns are fully modular and hot-reloadable for rapid development and experimentation.
+FlowSim is a modular poi spinning pattern visualizer and animation tool built with Python, Gradio, and Manim. It allows users to select, preview, and export a wide variety of physically accurate poi patterns. Specifically, it allows rendering of gunslinger poi patterns which are not available in other flow arts simulators/visualisers.
 
 ## Features
 - Modular pattern architecture (easy to add new patterns)
