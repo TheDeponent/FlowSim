@@ -14,7 +14,7 @@ FlowSim is a modular poi spinning pattern visualizer and animation tool built wi
 ## Getting Started
 1. Clone the repository:
    ```sh
-   git clone <your-repo-url>
+   git clone https://github.com/TheDeponent/FlowSim
    cd FlowSim
    ```
 2. Install dependencies:
