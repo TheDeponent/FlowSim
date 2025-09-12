@@ -1,2 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:F:/Programming/FlowSim/media/videos/1600p60/partial_movie_files/CombinedPatternScene/uncached_00000.mp4'
