@@ -29,7 +29,9 @@ PATTERN_OPTIONS = [
     "Vertical Cateye",
     "Isolation",
     "CAP (Vertical)",
-    "CAP (Horizontal)"
+    "CAP (Horizontal)",
+    "Spiral Wrap",
+    "Spiral Wrap (Unwraps)",
 ]
 
 with gr.Blocks() as demo:

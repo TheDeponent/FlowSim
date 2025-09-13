@@ -47,6 +47,8 @@ def combine_patterns(
         "Isolation": ("Isolation", "generate_Isolation"),
         "CAP (Vertical)": ("CAPAntispin", "generate_CAPAntispin"),
         "CAP (Horizontal)": ("CAPHorizontal", "generate_CAPHorizontal"),
+        "Spiral Wrap": ("Spiral", "generate_Spiral"),
+        "Spiral Wrap (Unwraps)": ("SpiralWrapUnwraps", "generate_SpiralWrapUnwraps"),
     }
 
     pattern_map = {}
