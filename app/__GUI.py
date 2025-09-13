@@ -17,6 +17,8 @@ PATTERN_OPTIONS = [
     "4 Petal Inspin",
     "2 Petal Inspin (Vertical)",
     "2 Petal Inspin (Horizontal)",
+    "1 Petal Inspin (Horizontal)",
+    "1 Petal Inspin (Vertical)",
     "Pendulum",
     "Extended Pendulum",
     "Isolated Pendulum",
