@@ -1,2 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:F:/Programming/FlowSim/media/videos/480p30/partial_movie_files/PoiPatternScene/2210429607_2920158924_2863430791.mp4'

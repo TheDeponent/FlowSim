@@ -1,8 +1,8 @@
 # Python virtual environment
 .venv/
 
-# Ignore all files in media except keep folder structure
-/media/*
+# Ignore all files in media except folders (keep folder structure)
+/media/**/*
 !/media/
 !/media/**/
 
