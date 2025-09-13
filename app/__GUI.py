@@ -3,7 +3,6 @@ import importlib
 from app.renderer import combine_patterns
 
 PATTERN_OPTIONS = [
-    "Extension",
     "10 Petal Antispin (Gunslinger)",
     "12 Petal Antispin (Gunslinger)",
     "10 Petal Inspin (Gunslinger)",
@@ -19,6 +18,9 @@ PATTERN_OPTIONS = [
     "2 Petal Inspin (Horizontal)",
     "1 Petal Inspin (Horizontal)",
     "1 Petal Inspin (Vertical)",
+    "Triquetra vs Extension (Gunslinger)",
+    "Extension",
+    "Half Extension",
     "Pendulum",
     "Extended Pendulum",
     "Isolated Pendulum",
@@ -36,7 +38,7 @@ with gr.Blocks() as demo:
         with gr.Column(scale=1, min_width=320):
             refresh_btn = gr.Button("Refresh Patterns", size="sm")
             with gr.Group():
-                left_pattern = gr.Dropdown(PATTERN_OPTIONS, label="Left Pattern", value=PATTERN_OPTIONS[0])
+                left_pattern = gr.Dropdown(PATTERN_OPTIONS, label="Left Pattern", value="Extension")
                 with gr.Row():
                     left_head_color = gr.ColorPicker(label="Head", value="#000000")
                     left_handle_color = gr.ColorPicker(label="Handle", value="#000000")
@@ -47,7 +49,7 @@ with gr.Blocks() as demo:
                     left_start_side = gr.Dropdown(["Left", "Right"], label="Start Side", value="Right")
                     left_direction = gr.Dropdown(["Clockwise", "Anti-Clockwise"], label="Direction", value="Anti-Clockwise")
             with gr.Group():
-                right_pattern = gr.Dropdown(PATTERN_OPTIONS, label="Right Pattern", value=PATTERN_OPTIONS[1])
+                right_pattern = gr.Dropdown(PATTERN_OPTIONS, label="Right Pattern", value="10 Petal Antispin (Gunslinger)")
                 with gr.Row():
                     right_head_color = gr.ColorPicker(label="Head", value="#CA1600")
                     right_handle_color = gr.ColorPicker(label="Handle", value="#CA1600")

@@ -20,6 +20,8 @@ def combine_patterns(
 
     # Map GUI names to (module, function) pairs
     pattern_lookup = {
+        "Triquetra vs Extension (Gunslinger)": ("TriquetraVsExtensionGunslinger", "generate_TriquetraVsExtensionGunslinger"),
+        "Half Extension": ("HalfExtension", "generate_HalfExtension"),
         "Extension": ("Extension", "generate_Extension"),
         "10 Petal Antispin (Gunslinger)": ("TenPetalAnti", "generate_TenPetalAnti"),
         "12 Petal Antispin (Gunslinger)": ("TwelvePetalAnti", "generate_TwelvePetalAnti"),
@@ -80,8 +82,23 @@ def combine_patterns(
     right_params = inspect.signature(right_func).parameters
     left_call_args = {k: v for k, v in left_args.items() if k in left_params}
     right_call_args = {k: v for k, v in right_args.items() if k in right_params}
-    left_x, left_y, left_handle_x, left_handle_y = left_func(**left_call_args)
-    right_x, right_y, right_handle_x, right_handle_y = right_func(**right_call_args)
+    left_result = left_func(**left_call_args)
+    right_result = right_func(**right_call_args)
+
+    def get_string_points(result):
+        # If pattern returns intermediate string points, use them
+        if len(result) == 5:
+            head_x, head_y, handle_x, handle_y, string_points = result
+            def points(idx):
+                # string_points[idx] is a list of control points for this frame
+                return [ [handle_x[idx], handle_y[idx], 0], *[ [p[0], p[1], 0] for p in string_points[idx] ], [head_x[idx], head_y[idx], 0] ]
+            return points
+        else:
+            head_x, head_y, handle_x, handle_y = result
+            return lambda idx: [ [handle_x[idx], handle_y[idx], 0], [head_x[idx], head_y[idx], 0] ]
+
+    left_x, left_y, left_handle_x, left_handle_y = left_result[:4]
+    right_x, right_y, right_handle_x, right_handle_y = right_result[:4]
 
     # Determine scene title based on visible poi
     if (not show_left_head and not show_left_handle) and (show_right_head or show_right_handle):
@@ -194,15 +211,41 @@ def combine_patterns(
             for trail in [left_head_trail, left_handle_trail, right_head_trail, right_handle_trail]:
                 if trail:
                     self.add(trail)
-            def make_string(dot_handle, dot_head):
-                if dot_handle and dot_head:
-                    line = Line(dot_handle.get_center(), dot_head.get_center(), color="#FFFFFF", stroke_width=1.5)
-                    def updater(mob):
-                        mob.put_start_and_end_on(dot_handle.get_center(), dot_head.get_center())
-                    line.add_updater(updater)
-                    self.add(line)
-            make_string(left_dot_handle, left_dot_head)
-            make_string(right_dot_handle, right_dot_head)
+            def make_string_bendable(idx, get_points):
+                pts = get_points(idx)
+                if len(pts) == 3:
+                    mob = VMobject().set_points_as_corners(pts).set_color("#FFFFFF").set_stroke(width=1.5)
+                elif len(pts) > 3:
+                    mob = VMobject().set_points_smoothly(pts).set_color("#FFFFFF").set_stroke(width=1.5)
+                else:
+                    mob = Line(pts[0], pts[1], color="#FFFFFF", stroke_width=1.5)
+                return mob
+
+            # Create and add bendable string objects with updaters
+            if left_dot_handle and left_dot_head:
+                left_string = make_string_bendable(0, get_string_points(left_result))
+                def left_string_updater(mob):
+                    idx = int(progress.get_value() * (len(left_x) - 1))
+                    idx = min(idx, len(left_x) - 1)
+                    pts = get_string_points(left_result)(idx)
+                    if len(pts) > 2:
+                        mob.set_points_smoothly(pts)
+                    else:
+                        mob.put_start_and_end_on(pts[0], pts[1])
+                left_string.add_updater(left_string_updater)
+                self.add(left_string)
+            if right_dot_handle and right_dot_head:
+                right_string = make_string_bendable(0, get_string_points(right_result))
+                def right_string_updater(mob):
+                    idx = int(progress.get_value() * (len(right_x) - 1))
+                    idx = min(idx, len(right_x) - 1)
+                    pts = get_string_points(right_result)(idx)
+                    if len(pts) > 2:
+                        mob.set_points_smoothly(pts)
+                    else:
+                        mob.put_start_and_end_on(pts[0], pts[1])
+                right_string.add_updater(right_string_updater)
+                self.add(right_string)
             for dot in [left_dot_head, left_dot_handle, right_dot_head, right_dot_handle]:
                 if dot:
                     self.add(dot)
