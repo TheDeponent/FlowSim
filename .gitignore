@@ -25,3 +25,6 @@ __pycache__/
 # MacOS and Windows system files
 .DS_Store
 Thumbs.db
+
+# SSL certificates
+certificate.pem

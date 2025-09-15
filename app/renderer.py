@@ -154,9 +154,11 @@ def combine_patterns(
             else:
                 title = Text(scene_title, font_size=est_font_size).to_edge(UP, buff=0.04)
                 self.add(title)
-            # Axis label at bottom with extra buffer
-            label = Text(axis_label, font_size=14).to_edge(DOWN, buff=0.12)
-            self.add(label)
+            # Hide axis label if both head and handle of one poi are unticked
+            hide_axis = (not show_left_head and not show_left_handle) or (not show_right_head and not show_right_handle)
+            if not hide_axis:
+                label = Text(axis_label, font_size=14).to_edge(DOWN, buff=0.12)
+                self.add(label)
             from manim import ValueTracker, always_redraw, Line
             dot_radius = 0.05
             progress = ValueTracker(0)

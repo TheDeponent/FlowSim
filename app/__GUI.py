@@ -50,6 +50,7 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     left_start_side = gr.Dropdown(["Left", "Right"], label="Start Side", value="Right")
                     left_direction = gr.Dropdown(["Clockwise", "Anti-Clockwise"], label="Direction", value="Anti-Clockwise")
+                left_angle_offset = gr.Slider(minimum=0, maximum=360, value=0, step=1, label="Left Start Angle Offset (deg)")
             with gr.Group():
                 right_pattern = gr.Dropdown(PATTERN_OPTIONS, label="Right Pattern", value="10 Petal Antispin (Gunslinger)")
                 with gr.Row():
@@ -61,6 +62,7 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     right_start_side = gr.Dropdown(["Left", "Right"], label="Start Side", value="Right")
                     right_direction = gr.Dropdown(["Clockwise", "Anti-Clockwise"], label="Direction", value="Anti-Clockwise")
+                right_angle_offset = gr.Slider(minimum=0, maximum=360, value=0, step=1, label="Right Start Angle Offset (deg)")
             combine_btn = gr.Button("Combine Patterns")
             export_gif_btn = gr.Button("Export GIF", size="sm")
             with gr.Row():
