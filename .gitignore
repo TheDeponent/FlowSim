@@ -28,3 +28,6 @@ Thumbs.db
 
 # SSL certificates
 certificate.pem
+
+# Ignore exported SVGs
+SVGs/*.svg

@@ -1,5 +1,6 @@
 import gradio as gr
 import importlib
+import os
 from app.renderer import combine_patterns
 
 PATTERN_OPTIONS = [
@@ -48,9 +49,10 @@ with gr.Blocks() as demo:
                     show_left_head = gr.Checkbox(label="Show Head", value=True)
                     show_left_handle = gr.Checkbox(label="Show Handle", value=True)
                 with gr.Row():
+                    show_left_path_only = gr.Checkbox(label="Show Only Path", value=False)
+                with gr.Row():
                     left_start_side = gr.Dropdown(["Left", "Right"], label="Start Side", value="Right")
                     left_direction = gr.Dropdown(["Clockwise", "Anti-Clockwise"], label="Direction", value="Anti-Clockwise")
-                left_angle_offset = gr.Slider(minimum=0, maximum=360, value=0, step=1, label="Left Start Angle Offset (deg)")
             with gr.Group():
                 right_pattern = gr.Dropdown(PATTERN_OPTIONS, label="Right Pattern", value="10 Petal Antispin (Gunslinger)")
                 with gr.Row():
@@ -60,13 +62,17 @@ with gr.Blocks() as demo:
                     show_right_head = gr.Checkbox(label="Show Head", value=True)
                     show_right_handle = gr.Checkbox(label="Show Handle", value=True)
                 with gr.Row():
+                    show_right_path_only = gr.Checkbox(label="Show Only Path", value=False)
+                with gr.Row():
                     right_start_side = gr.Dropdown(["Left", "Right"], label="Start Side", value="Right")
                     right_direction = gr.Dropdown(["Clockwise", "Anti-Clockwise"], label="Direction", value="Anti-Clockwise")
-                right_angle_offset = gr.Slider(minimum=0, maximum=360, value=0, step=1, label="Right Start Angle Offset (deg)")
             combine_btn = gr.Button("Combine Patterns")
-            export_gif_btn = gr.Button("Export GIF", size="sm")
+            with gr.Row():
+                export_gif_btn = gr.Button("Export GIF", size="sm")
+                export_svg_btn = gr.Button("Export SVG", size="sm")
             with gr.Row():
                 gif_file = gr.File(label=None, visible=False)
+                svg_file = gr.File(label=None, visible=False)
         with gr.Column(scale=2, min_width=1100):
             output = gr.Video(label="Combined Pattern Animation", height=700, width=1100, autoplay=True)
 
@@ -96,7 +102,8 @@ with gr.Blocks() as demo:
         left_pattern, left_head_color, left_handle_color, left_arm_length, left_poi_length, left_start_side, left_direction,
         right_pattern, right_head_color, right_handle_color, right_arm_length, right_poi_length, right_start_side, right_direction,
         show_left_head, show_left_handle, show_right_head, show_right_handle,
-        frame_idx=0, preview_mode=False
+        show_left_path_only, show_right_path_only,
+        frame_idx=0, preview_mode=False, output_format='mp4'
     ):
         return combine_patterns(
             left_pattern,
@@ -108,7 +115,8 @@ with gr.Blocks() as demo:
             color_to_hex(right_handle_color),
             right_arm_length, right_poi_length, right_start_side, right_direction,
             show_left_head, show_left_handle, show_right_head, show_right_handle,
-            frame_idx, preview_mode
+            show_left_path_only, show_right_path_only,
+            frame_idx, preview_mode, output_format
         )
 
     combine_btn.click(
@@ -117,7 +125,8 @@ with gr.Blocks() as demo:
             left_pattern, left_head_color, left_handle_color, gr.State(0.7), gr.State(0.45), left_start_side, left_direction,
             right_pattern, right_head_color, right_handle_color, gr.State(0.7), gr.State(0.45), right_start_side, right_direction,
             show_left_head, show_left_handle, show_right_head, show_right_handle,
-            gr.State(0), gr.State(False)
+            show_left_path_only, show_right_path_only,
+            gr.State(0), gr.State(False), gr.State('mp4')
         ],
         outputs=output
     )
@@ -127,6 +136,17 @@ with gr.Blocks() as demo:
 
     export_gif_btn.click(export_gif_gui, outputs=gif_file)
     export_gif_btn.click(lambda: gr.update(visible=True), outputs=gif_file)
+
+    def export_svg_gui():
+        from app.renderer import export_svg
+        svg_path = export_svg()
+        if svg_path and os.path.exists(svg_path):
+            return svg_path
+        else:
+            return None  # Or a string message if preferred
+
+    export_svg_btn.click(export_svg_gui, outputs=svg_file)
+    export_svg_btn.click(lambda: gr.update(visible=True), outputs=svg_file)
 
     def refresh_patterns():
         import sys

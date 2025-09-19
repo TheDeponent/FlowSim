@@ -4,13 +4,18 @@ from manim import config, tempconfig, Scene, Dot, Text, VMobject, Line, UP, DOWN
 from app.patterns.constants import ARM_LENGTH, POI_LENGTH, NUM_POINTS
 import moviepy as mpy
 
+last_video_path = None
+last_scene_title = ""
+last_combine_args = {}
+
 
 def combine_patterns(
     left_pattern, left_head_color, left_handle_color, left_arm_length, left_poi_length, left_start_side, left_direction,
     right_pattern, right_head_color, right_handle_color, right_arm_length, right_poi_length, right_start_side, right_direction,
     show_left_head, show_left_handle, show_right_head, show_right_handle,
-    frame_idx=0, preview_mode=False
-):
+    show_left_path_only=False, show_right_path_only=False,
+    frame_idx=0, preview_mode=False, output_format='mp4'
+    ):
     config.pixel_height = 1200
     config.pixel_width = 1200
     config.frame_height = 4.0
@@ -112,6 +117,9 @@ def combine_patterns(
     else:
         scene_title = f"{left_pattern} vs {right_pattern}"
 
+    if show_left_path_only or show_right_path_only:
+        scene_title = ""
+
     # Split scene title over two lines if too long
     max_title_chars = 35
     if len(scene_title) > max_title_chars and " vs " in scene_title:
@@ -137,6 +145,11 @@ def combine_patterns(
         axis_label = "Split Time Opposite Direction"
 
     class CombinedPatternScene(Scene):
+        def __init__(self, show_left_path_only, show_right_path_only, **kwargs):
+            self.show_left_path_only = show_left_path_only
+            self.show_right_path_only = show_right_path_only
+            super().__init__(**kwargs)
+
         def construct(self):
             # Dynamically size title to fit frame width
             max_title_width = config.frame_width * 0.9
@@ -154,8 +167,10 @@ def combine_patterns(
             else:
                 title = Text(scene_title, font_size=est_font_size).to_edge(UP, buff=0.04)
                 self.add(title)
-            # Hide axis label if both head and handle of one poi are unticked
-            hide_axis = (not show_left_head and not show_left_handle) or (not show_right_head and not show_right_handle)
+            # Hide axis label if both head and handle of one poi are unticked or if path only is selected
+            hide_axis = (not show_left_head and not show_left_handle) or \
+                        (not show_right_head and not show_right_handle) or \
+                        self.show_left_path_only or self.show_right_path_only
             if not hide_axis:
                 label = Text(axis_label, font_size=14).to_edge(DOWN, buff=0.12)
                 self.add(label)
@@ -170,30 +185,51 @@ def combine_patterns(
             right_handle_history = []
 
             # Dots
-            left_dot_head = Dot(color=left_head_color, radius=dot_radius) if show_left_head else None
-            left_dot_handle = Dot(color=left_handle_color, radius=dot_radius) if show_left_handle else None
-            right_dot_head = Dot(color=right_head_color, radius=dot_radius) if show_right_head else None
-            right_dot_handle = Dot(color=right_handle_color, radius=dot_radius) if show_right_handle else None
+            left_dot_head = Dot(color=left_head_color, radius=dot_radius) if show_left_head and not self.show_left_path_only else None
+            left_dot_handle = Dot(color=left_handle_color, radius=dot_radius) if show_left_handle and not self.show_left_path_only else None
+            right_dot_head = Dot(color=right_head_color, radius=dot_radius) if show_right_head and not self.show_right_path_only else None
+            right_dot_handle = Dot(color=right_handle_color, radius=dot_radius) if show_right_handle and not self.show_right_path_only else None
 
-            # Updaters for dots: update position and append to history
+            # Updaters for dots and history
             def dot_updater_factory(x, y, history):
                 def updater(mob):
                     idx = int(progress.get_value() * (len(x) - 1))
-                    idx = min(idx, len(x) - 1)  # Clamp to last index
+                    idx = min(idx, len(x) - 1)
                     pos = [x[idx], y[idx], 0]
                     mob.move_to(pos)
                     if len(history) == 0 or history[-1] != pos:
                         history.append(pos)
                 return updater
 
+            def history_only_updater_factory(x, y, history):
+                def updater(_): # mob is not used
+                    idx = int(progress.get_value() * (len(x) - 1))
+                    idx = min(idx, len(x) - 1)
+                    pos = [x[idx], y[idx], 0]
+                    if len(history) == 0 or history[-1] != pos:
+                        history.append(pos)
+                return updater
+
+            # Attach updaters
             if left_dot_head:
                 left_dot_head.add_updater(dot_updater_factory(left_x, left_y, left_head_history))
+            elif self.show_left_path_only:
+                progress.add_updater(history_only_updater_factory(left_x, left_y, left_head_history))
+
             if left_dot_handle:
                 left_dot_handle.add_updater(dot_updater_factory(left_handle_x, left_handle_y, left_handle_history))
+            elif self.show_left_path_only:
+                progress.add_updater(history_only_updater_factory(left_handle_x, left_handle_y, left_handle_history))
+
             if right_dot_head:
                 right_dot_head.add_updater(dot_updater_factory(right_x, right_y, right_head_history))
+            elif self.show_right_path_only:
+                progress.add_updater(history_only_updater_factory(right_x, right_y, right_head_history))
+
             if right_dot_handle:
                 right_dot_handle.add_updater(dot_updater_factory(right_handle_x, right_handle_y, right_handle_history))
+            elif self.show_right_path_only:
+                progress.add_updater(history_only_updater_factory(right_handle_x, right_handle_y, right_handle_history))
 
             # Helper for safe trail rendering
             def safe_trail(history, color):
@@ -206,10 +242,10 @@ def combine_patterns(
                 return VMobject().set_points_as_corners(pts).set_color(color).set_stroke(width=4)
 
             # Trails using always_redraw and history
-            left_head_trail = always_redraw(lambda: safe_trail(left_head_history, left_head_color)) if show_left_head else None
-            left_handle_trail = always_redraw(lambda: safe_trail(left_handle_history, left_handle_color)) if show_left_handle else None
-            right_head_trail = always_redraw(lambda: safe_trail(right_head_history, right_head_color)) if show_right_head else None
-            right_handle_trail = always_redraw(lambda: safe_trail(right_handle_history, right_handle_color)) if show_right_handle else None
+            left_head_trail = always_redraw(lambda: safe_trail(left_head_history, left_head_color)) if show_left_head or self.show_left_path_only else None
+            left_handle_trail = always_redraw(lambda: safe_trail(left_handle_history, left_handle_color)) if show_left_handle or self.show_left_path_only else None
+            right_head_trail = always_redraw(lambda: safe_trail(right_head_history, right_head_color)) if show_right_head or self.show_right_path_only else None
+            right_handle_trail = always_redraw(lambda: safe_trail(right_handle_history, right_handle_color)) if show_right_handle or self.show_right_path_only else None
 
             # Add trails before dots
             for trail in [left_head_trail, left_handle_trail, right_head_trail, right_handle_trail]:
@@ -225,8 +261,8 @@ def combine_patterns(
                     mob = Line(pts[0], pts[1], color="#FFFFFF", stroke_width=1.5)
                 return mob
 
-            # Create and add bendable string objects with updaters
-            if left_dot_handle and left_dot_head:
+            # Create and add bendable string objects with updaters, unless 'Show Only Path' is ticked
+            if left_dot_handle and left_dot_head and not self.show_left_path_only:
                 left_string = make_string_bendable(0, get_string_points(left_result))
                 def left_string_updater(mob):
                     idx = int(progress.get_value() * (len(left_x) - 1))
@@ -238,7 +274,7 @@ def combine_patterns(
                         mob.put_start_and_end_on(pts[0], pts[1])
                 left_string.add_updater(left_string_updater)
                 self.add(left_string)
-            if right_dot_handle and right_dot_head:
+            if right_dot_handle and right_dot_head and not self.show_right_path_only:
                 right_string = make_string_bendable(0, get_string_points(right_result))
                 def right_string_updater(mob):
                     idx = int(progress.get_value() * (len(right_x) - 1))
@@ -259,34 +295,138 @@ def combine_patterns(
             overshoot = 1 + 10/(n_frames - 1)
             self.play(progress.animate.set_value(overshoot), run_time=4, rate_func=lambda t: t)
 
-    if preview_mode:
+    # Save arguments for re-rendering, excluding output_format to avoid recursion
+    saved_args = locals().copy()
+    saved_args.pop('output_format', None)
+    global last_combine_args
+    last_combine_args = saved_args
+
+    if output_format == 'svg':
+        try:
+            print("combine_patterns: Rendering for SVG.")
+            scene = CombinedPatternScene(show_left_path_only=show_left_path_only, show_right_path_only=show_right_path_only)
+            scene.render()
+            print(f"combine_patterns: SVG render complete. Returning path: {config.output_file}")
+            return config.output_file
+        except Exception as e:
+            print(f"ERROR in combine_patterns (SVG): {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    elif preview_mode:
         img_path = os.path.join(os.getcwd(), f"preview_frame_{frame_idx}.png")
-        with tempconfig({"output_file": img_path, "format": "png"}):
-            scene = CombinedPatternScene()
+        with tempconfig({"output_file": img_path, "format": "png", "save_last_frame": True}):
+            scene = CombinedPatternScene(show_left_path_only=show_left_path_only, show_right_path_only=show_right_path_only)
             scene.render()
         return img_path
-    else:
-        video_path = os.path.join(os.getcwd(), "combined_pattern.mp4")
-        # Ensure any existing video file is deleted before rendering
+    else: # Default to MP4
+        temp_dir = os.path.join(os.getcwd(), "temp")
+        os.makedirs(temp_dir, exist_ok=True)
+        video_path = os.path.join(temp_dir, "combined_pattern.mp4")
         if os.path.exists(video_path):
             os.remove(video_path)
         with tempconfig({"output_file": video_path, "format": "mp4"}):
-            scene = CombinedPatternScene()
+            scene = CombinedPatternScene(show_left_path_only=show_left_path_only, show_right_path_only=show_right_path_only)
             scene.render()
-    global last_video_path, last_scene_title
-    last_video_path = video_path
-    last_scene_title = scene_title
-    return video_path
+        global last_video_path
+        last_video_path = video_path
+        last_scene_title = scene_title
+        return video_path
 
 def export_gif():
-    try:
-        scene_title = last_scene_title
-    except Exception:
-        scene_title = "combined_pattern"
-    # Sanitize filename
-    safe_title = scene_title.replace(" ", "_").replace("/", "-").replace("\\", "-")
-    gif_path = os.path.join(os.getcwd(), f"{safe_title}.gif")
-    clip = mpy.VideoFileClip(last_video_path)
-    clip.write_gif(gif_path, fps=24)
-    clip.close()  # Ensure file handle is released
-    return gif_path
+    from app.utils import export_gif as utils_export_gif
+    global last_scene_title, last_combine_args, last_video_path
+    return utils_export_gif(last_video_path, last_combine_args)
+
+def get_final_frame_objects(
+    left_x, left_y, left_handle_x, left_handle_y,
+    right_x, right_y, right_handle_x, right_handle_y,
+    left_head_color, left_handle_color, right_head_color, right_handle_color,
+    show_left_head, show_left_handle, show_right_head, show_right_handle,
+    show_left_path_only, show_right_path_only,
+    scene_title, axis_label,
+    left_result, right_result
+):
+    from manim import VMobject, Dot, Line, Text, config, UP, DOWN
+    # Helper for string points
+    def get_string_points(result):
+        if len(result) == 5:
+            head_x, head_y, handle_x, handle_y, string_points = result
+            def points(idx):
+                return [ [handle_x[idx], handle_y[idx], 0], *[ [p[0], p[1], 0] for p in string_points[idx] ], [head_x[idx], head_y[idx], 0] ]
+            return points
+        else:
+            head_x, head_y, handle_x, handle_y = result
+            return lambda idx: [ [handle_x[idx], handle_y[idx], 0], [head_x[idx], head_y[idx], 0] ]
+
+    objects = []
+    dot_radius = 0.05
+    idx = -1  # final frame
+    # Title
+    max_title_width = config.frame_width * 0.9
+    base_font_size = 24
+    min_font_size = 14
+    est_font_size = max(min_font_size, min(base_font_size, int(base_font_size * max_title_width / (len(scene_title.replace('\n', '')) + 8))))
+    if scene_title:
+        if "\n" in scene_title:
+            title_lines = scene_title.split("\n")
+            title_objs = [Text(line, font_size=est_font_size) for line in title_lines]
+            title_objs[0].to_edge(UP, buff=0.04)
+            title_objs[1].next_to(title_objs[0], DOWN, buff=0.08)
+            objects.extend(title_objs)
+        else:
+            title = Text(scene_title, font_size=est_font_size).to_edge(UP, buff=0.04)
+            objects.append(title)
+    # Axis label
+    hide_axis = (not show_left_head and not show_left_handle) or \
+                (not show_right_head and not show_right_handle) or \
+                show_left_path_only or show_right_path_only
+    if axis_label and not hide_axis:
+        label = Text(axis_label, font_size=14).to_edge(DOWN, buff=0.12)
+        objects.append(label)
+    # Trails
+    def static_trail(x, y, color):
+        pts = [[x[i], y[i], 0] for i in range(len(x))]
+        return VMobject().set_points_as_corners(pts).set_color(color).set_stroke(width=4)
+    if show_left_head or show_left_path_only:
+        objects.append(static_trail(left_x, left_y, left_head_color))
+    if show_left_handle or show_left_path_only:
+        objects.append(static_trail(left_handle_x, left_handle_y, left_handle_color))
+    if show_right_head or show_right_path_only:
+        objects.append(static_trail(right_x, right_y, right_head_color))
+    if show_right_handle or show_right_path_only:
+        objects.append(static_trail(right_handle_x, right_handle_y, right_handle_color))
+    # Dots
+    left_dot_head = Dot(color=left_head_color, radius=dot_radius) if show_left_head and not show_left_path_only else None
+    left_dot_handle = Dot(color=left_handle_color, radius=dot_radius) if show_left_handle and not show_left_path_only else None
+    right_dot_head = Dot(color=right_head_color, radius=dot_radius) if show_right_head and not show_right_path_only else None
+    right_dot_handle = Dot(color=right_handle_color, radius=dot_radius) if show_right_handle and not show_right_path_only else None
+    for dot, x, y in [
+        (left_dot_head, left_x, left_y),
+        (left_dot_handle, left_handle_x, left_handle_y),
+        (right_dot_head, right_x, right_y),
+        (right_dot_handle, right_handle_x, right_handle_y)
+    ]:
+        if dot:
+            dot.move_to([x[idx], y[idx], 0])
+            objects.append(dot)
+    # Strings (bendable)
+    def make_string_bendable(idx, get_points):
+        pts = get_points(idx)
+        if len(pts) == 3:
+            mob = VMobject().set_points_as_corners(pts).set_color("#FFFFFF").set_stroke(width=1.5)
+        elif len(pts) > 3:
+            mob = VMobject().set_points_smoothly(pts).set_color("#FFFFFF").set_stroke(width=1.5)
+        else:
+            mob = Line(pts[0], pts[1], color="#FFFFFF", stroke_width=1.5)
+        return mob
+    if left_dot_handle and left_dot_head and not show_left_path_only:
+        objects.append(make_string_bendable(idx, get_string_points(left_result)))
+    if right_dot_handle and right_dot_head and not show_right_path_only:
+        objects.append(make_string_bendable(idx, get_string_points(right_result)))
+    return objects
+
+def export_svg():
+    from app.utils import export_svg as utils_export_svg
+    global last_scene_title, last_combine_args
+    return utils_export_svg(last_combine_args, get_final_frame_objects)
